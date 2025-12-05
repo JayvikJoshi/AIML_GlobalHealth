@@ -107,3 +107,9 @@ Runs demo on a single image.
 2.  **Run `code.ipynb`**: Train the YOLOv8 model. (Use Google Colab for GPU acceleration.)
 3.  **Run `inference.ipynb`**: Evaluate the model, compute metrics, and optimize confidence thresholds.
 4.  **Run `demo.ipynb`**: Runs demo on a single image.
+
+## Other Files
+
+*   **`weights/`**: Contains the best and last weights of the trained model.
+*   **`final_run/`**: Contains final run logs and graphs.
+*   **`examples/`**: Contains example images and associated labels.
