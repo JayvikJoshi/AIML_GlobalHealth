@@ -1,51 +1,109 @@
-# AIML in GlobalHealth Malaria Detection using YOLOv8 small
+# AIML in GlobalHealth Malaria Detection using YOLOv8 Small
 
-This project implements a complete pipeline for detecting Malaria parasites and White Blood Cells (WBC) in medical images using the YOLOv8 small object detection model.
+This project implements an end to end program that detects Malaria parasites and white blood cells in medical images using the YOLOv8 small object detection model.
+
+## Installation & Setup
+
+You can run the pipeline either locally or in Google Colab. Google Colab is recommended for training due to GPU availability.
+
+### Option 1: Local Setup
+
+1.  Install Python 3.9+
+2.  Create and activate a virtual environment:
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate      # Linux/Mac
+    venv\Scripts\activate         # Windows
+    ```
+
+3.  Install required packages:
+
+    ```bash
+    pip install ultralytics opencv-python numpy matplotlib tqdm
+    ```
+
+4.  (Optional) Install Jupyter Notebook if running notebooks locally:
+
+    ```bash
+    pip install notebook
+    jupyter notebook
+    ```
+
+### Option 2: Google Colab Setup (Recommended)
+
+1.  Upload the project notebooks to Google Colab.
+2.  Enable GPU acceleration:
+    *   `Runtime > Change runtime type > Hardware accelerator > GPU`
+3.  Install dependencies within the notebook:
+
+    ```python
+    !pip install ultralytics opencv-python tqdm
+    ```
+
+4.  Mount Google Drive if you plan to store data or model weights there:
+
+    ```python
+    from google.colab import drive
+    drive.mount('/content/drive')
+    ```
 
 ## File Structure
 
-1.  **`preprocess.ipynb`**: Data preparation
-2.  **`code.ipynb`**: Model training
-3.  **`inference.ipynb`**: Model evaluation
+*   **`preprocess.ipynb`**: Data preparation
+*   **`code.ipynb`**: Model training
+*   **`inference.ipynb`**: Model evaluation
+*   **`demo.ipynb`**: Runs demo on a single image
 
 ## Notebook Descriptions
 
-### 1. `preprocess.ipynb` (Data Preparation)
+### 1. `preprocess.ipynb` — Data Preparation
+
 This notebook transforms raw image data files into a format optimized for YOLOv8 training.
 
-*   **Image Analysis**: Calculates and visualizes the distribution of image dimensions to inform resizing and tiling strategies.
+*   **Image Analysis**: Calculates and visualizes image dimension distributions to guide resizing and tiling.
 *   **Contour Cropping (`crop_contour`)**:
-    *   Automatically detects the region of interest (the blood smear) using Otsu's thresholding and contour detection.
-    *   Crops the image to a bounding circle around the smear to remove irrelevant background.
-    *   Re-maps existing YOLO labels to the new cropped coordinates.
+    *   Detects the region of interest (blood smear) using Otsu thresholding + contour detection
+    *   Crops images to a bounding circle around the smear
+    *   Re-maps YOLO bounding box labels to new coordinates
 *   **Image Tiling (`tile_image_and_labels`)**:
-    *   Splits large cropped images into smaller, fixed-size tiles (1280x1280) with overlap.
-    *   Adjusts bounding box coordinates for each tile.
-*   **Dataset Splitting**: Randomly partitions the processed tiles into `train`, `val`, and `test` sets (default: 70/20/10 split).
+    *   Splits large cropped images into fixed-size 1280×1280 tiles with overlap
+    *   Adjusts bounding box coordinates tile-by-tile
+*   **Dataset Splitting**: Automatically creates train, val, and test directories (default split: 70/20/10).
 
-### 2. `code.ipynb` (Model Training)
-This notebook handles the training of the YOLOv8 model, designed to run in a Google Colab environment.
+### 2. `code.ipynb` — Model Training
 
-*   **Environment Setup**: Mounts Google Drive for persistent storage and installs packages. Transfers data from Google Drive to a temporary directory for faster data access.
-*   **Model Initialization**: Loads a pre-trained `yolov8s.pt` (small) model.
-*   **Custom Backup Callback**:
-    *   Implements a `backup_run_folder_callback` that copies training run folder (weights, logs) to Google Drive every 5 epochs.
-*   **Training Loop**: Executes `model.train()` with specified hyperparameters (100 epochs, image size 1280, batch size 16, AdamW optimizer).
+Designed to run efficiently in Google Colab.
 
-### 3. `inference.ipynb` (Evaluation & Optimization)
-This notebook evaluates a model's performance on a test dataset and optimizes confidence thresholds for accurate object counting.
+*   **Environment Setup**: Mounts Google Drive and installs dependencies. Optionally copies data to `/content` for faster IO.
+*   **Model Initialization**: Loads a pre-trained `yolov8s.pt` model.
+*   **Custom Backup Callback**: A `backup_run_folder_callback` saves training weights and logs to Google Drive every 5 epochs for safety.
+*   **Training Loop**: Runs YOLO training with:
+    *   100 epochs
+    *   Image size 1280
+    *   Batch size 16
+    *   AdamW optimizer
 
-*   **Inference Pipeline**: Loads the trained weights
+### 3. `inference.ipynb` — Evaluation & Optimization
+
+Evaluates the trained model and optimizes thresholds for accurate parasite/WBC counting.
+
+*   **Inference Pipeline**: Loads trained weights and performs detection on test images.
 *   **Custom Metrics**:
-    *   Calculates standard YOLO metrics: Precision, Recall, mAP, and IoU.
-    *   **Average Percentage Error**: Computes the error in counting parasites and WBCs per image.
+    *   Standard YOLO metrics: Precision, Recall, mAP, IoU
+    *   Average Percentage Error for parasite and WBC counts per image
 *   **Threshold Optimization**:
-    *   Performs a grid search on a subset of the data over confidence thresholds for each class (parasite vs. WBC).
-    *   Generates a heatmap of the Total Percentage Error to visualize how different thresholds affect counting accuracy.
-    *   Identifies and applies the optimal confidence values to minimize the counting error.
+    *   Performs confidence threshold grid search for each class
+    *   Generates heatmaps of Total Percentage Error
+    *   Identifies optimal thresholds that minimize counting error
+
+### 4. `demo.ipynb` — Demo
+
+Runs demo on a single image.
 
 ## Usage
 
-1.  **Run `preprocess.ipynb`**: Prepare your raw data. Ensure source paths are correctly set.
-2.  **Run `code.ipynb`**: Train the model. This is best run on a good GPU in Google Colab.
-3.  **Run `inference.ipynb`**: Evaluate the model on your local machine or Colab using the saved weights from the training step.
+1.  **Run `preprocess.ipynb`**: Prepare the raw dataset and generate YOLO-ready tiles.
+2.  **Run `code.ipynb`**: Train the YOLOv8 model. (Use Google Colab for GPU acceleration.)
+3.  **Run `inference.ipynb`**: Evaluate the model, compute metrics, and optimize confidence thresholds.
+4.  **Run `demo.ipynb`**: Runs demo on a single image.
